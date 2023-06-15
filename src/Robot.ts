@@ -21,4 +21,8 @@ export class Robot {
     collect(): Inventory<ResourceTypeEnum> {
         return this.loot;
     }
+
+    getLoot(): Inventory<ResourceTypeEnum> {
+        return this.loot;
+    }
 }

@@ -4,16 +4,29 @@ import { type ResourceTypeEnum } from './types';
 
 export class RobotShop {
     private readonly robots: Record<string, Robot> = {};
+    private initialRobotName: string;
 
     registerRobot(robot: Robot): void {
+        if (this.initialRobotName === undefined) {
+            this.initialRobotName = robot.robotName;
+        }
         this.robots[robot.robotName] = robot;
     }
 
-    private getPrice(robotName: string): RobotPrice {
+    getRobotNames(): string[] {
+        return Object.keys(this.robots);
+    }
+
+    getRobot(robotName: string): Robot {
         if (this.robots[robotName] === undefined) {
             throw new Error(`Robot ${robotName} does not exist`);
         }
-        return this.robots[robotName].getPrice();
+        return this.robots[robotName];
+    }
+
+    private getPrice(robotName: string): RobotPrice {
+        const robot = this.getRobot(robotName);
+        return robot.getPrice();
     }
 
     canAfford(robotName: string, inventory: Inventory<ResourceTypeEnum>): boolean {
@@ -26,7 +39,7 @@ export class RobotShop {
         return true;
     }
 
-    buy(robotName: string, inventory: Inventory<ResourceTypeEnum>): void {
+    deductPrice(robotName: string, inventory: Inventory<ResourceTypeEnum>): void {
         const price = this.getPrice(robotName);
         for (const resourceType of Object.keys(price)) {
             const resourcePrice = price[resourceType] as number;
@@ -53,5 +66,9 @@ export class RobotShop {
             }
         }
         return maxPrice;
+    }
+
+    getInitialRobotName(): string {
+        return this.initialRobotName;
     }
 }

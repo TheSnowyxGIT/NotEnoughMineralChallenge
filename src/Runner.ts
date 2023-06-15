@@ -1,19 +1,38 @@
 import { StateCache } from './Cache';
-import { ResourceTypeEnum } from './Shop';
+import { type RobotShop } from './RobotShop';
 import { State } from './State';
 
 export class Runner {
+    private readonly shop: RobotShop;
+    private readonly initialState: State;
+
+    constructor(robotShop: RobotShop) {
+        this.shop = robotShop;
+        this.setInitialRobots();
+    }
+
+    public setInitialRobots(): void {
+        for (const robotName of this.shop.getRobotNames()) {
+            if (this.shop.getInitialRobotName() === robotName) {
+                this.initialState.robots.add(robotName, 1);
+            } else {
+                this.initialState.robots.add(robotName, 0);
+            }
+        }
+    }
+
     public run(minutes: number): void {
         if (minutes < 1) {
             throw new Error('The number of minutes must be greater than 0');
         }
+        State.maxMinutes = minutes;
         const finalState = this._run(null);
 
         finalState.showLogs();
     }
 
     private _run(parent: State | null): State {
-        let state: State = new State(1);
+        let state: State = this.initialState;
         if (parent !== null) {
             state = parent.buildCopy().getNextState();
         }
@@ -32,15 +51,15 @@ export class Runner {
         // * we will explore all the recursive states depending of the robot which have been bought
         const subStates: State[] = [];
         if (!state.isLastMinute()) {
-            for (const robotType of Object.values(ResourceTypeEnum)) {
-                if (state.canAfford(robotType)) {
-                    if (!state.isBeneficialToBuy(robotType)) {
-                        continue;
-                    }
+            for (const robotName of this.shop.getRobotNames()) {
+                if (state.canAfford(robotName)) {
+                    /* if (!state.isBeneficialToBuy(robotType)) {
+                            continue;
+                        } */
                     const newState = state.buildCopy(parent);
-                    newState.buy(robotType);
+                    newState.buy(robotName);
                     newState.collect();
-                    newState.finishBuilding();
+                    newState.gettingRobot();
                     subStates.push(this._run(newState));
                 }
             }
