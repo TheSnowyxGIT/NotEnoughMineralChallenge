@@ -49,21 +49,21 @@ export class ShopLoader {
             }),
         );
         robotShop.registerRobot(
-            new Robot('clay-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+            new Robot('clay-collecting robot', new Inventory<ResourceTypeEnum>().with('clay', 1), {
                 ore: this.blueprints[id].getClayRC().getOre(),
                 clay: this.blueprints[id].getClayRC().getClay(),
                 obsidian: this.blueprints[id].getClayRC().getObsidian(),
             }),
         );
         robotShop.registerRobot(
-            new Robot('obsidian-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+            new Robot('obsidian-collecting robot', new Inventory<ResourceTypeEnum>().with('obsidian', 1), {
                 ore: this.blueprints[id].getObsidianRC().getOre(),
                 clay: this.blueprints[id].getObsidianRC().getClay(),
                 obsidian: this.blueprints[id].getObsidianRC().getObsidian(),
             }),
         );
         robotShop.registerRobot(
-            new Robot('geode-cracking', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+            new Robot('geode-cracking', new Inventory<ResourceTypeEnum>().with('geode', 1), {
                 ore: this.blueprints[id].getGeodeRC().getOre(),
                 clay: this.blueprints[id].getGeodeRC().getClay(),
                 obsidian: this.blueprints[id].getGeodeRC().getObsidian(),
