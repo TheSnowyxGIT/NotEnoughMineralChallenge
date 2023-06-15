@@ -7,9 +7,14 @@ import { type ResourceTypeEnum } from './types';
 export class ShopLoader {
     private static readonly pattern = /[0-9]+/gi;
     private readonly blueprints: BlueprintContainer[] = [];
+    private readonly filePath: string;
+
+    constructor(filePath: string) {
+        this.filePath = filePath;
+    }
 
     load(): void {
-        const allBlueprints: string = fs.readFileSync('./blueprints.txt', 'utf8');
+        const allBlueprints: string = fs.readFileSync(this.filePath, 'utf8');
         allBlueprints.split('\n').forEach((blueprint) => {
             if (blueprint !== '') {
                 this.blueprints.push(this.parseBlueprint(blueprint));
@@ -31,15 +36,15 @@ export class ShopLoader {
         );
     }
 
-    getAllBlueprints(): RobotShop[] {
+    getAllShops(): RobotShop[] {
         const robotShops: RobotShop[] = [];
         this.blueprints.forEach((blueprint) => {
-            robotShops.push(this.getBlueprint(blueprint.getId()));
+            robotShops.push(this.getShop(blueprint.getId()));
         });
         return robotShops;
     }
 
-    getBlueprint(id: number): RobotShop {
+    getShop(id: number): RobotShop {
         const robotShop = new RobotShop();
         robotShop.registerRobot(
             new Robot('ore-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
@@ -72,7 +77,7 @@ export class ShopLoader {
         return robotShop;
     }
 
-    printBlueprint(id: number): void {
+    printShop(id: number): void {
         console.log(
             `Robot ${id}:\n` +
                 `ore: ${this.blueprints[id].getOreRC().getOre()}, clay: ${this.blueprints[id]
@@ -123,7 +128,7 @@ class BlueprintContainer {
     private readonly geodeRC: RobotCost;
 
     constructor(id: number, oreRC: RobotCost, clayRC: RobotCost, obsidianRC: RobotCost, geodeRC: RobotCost) {
-        this.id = id;
+        this.id = --id;
         this.oreRC = oreRC;
         this.clayRC = clayRC;
         this.obsidianRC = obsidianRC;

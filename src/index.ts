@@ -1,5 +1,7 @@
-import { Runner } from './Runner';
+import { ShopLoader } from './ShopLoader';
 
-const runner = new Runner();
+const shopLoader = new ShopLoader('blueprints.txt');
 
-runner.run(2);
+shopLoader.load();
+
+shopLoader.printShop(0);
