@@ -41,7 +41,9 @@ export class State {
             const loot = this.shop.getRobot(robotName).getLoot();
             const multiplyLoot = Inventory.multiply<ResourceTypeEnum>(loot, numberOfRobots);
             this.resources.addAll(multiplyLoot);
-            this.logs.push(`${numberOfRobots} ${robotName} collects ${loot.toString()}, you now have XXX`);
+            if (!multiplyLoot.isEmpty()) {
+                this.logs.push(`${numberOfRobots} ${robotName} collects ${loot.toString()}, you now have XXX`);
+            }
         }
     }
 

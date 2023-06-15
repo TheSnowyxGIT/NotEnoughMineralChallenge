@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 export class Inventory<Enum extends string> {
     private readonly inventory: Record<Enum, number>;
 
@@ -7,6 +8,10 @@ export class Inventory<Enum extends string> {
             multipliedInventory.set(key, inventory.get(key) * multiplier);
         }
         return multipliedInventory;
+    }
+
+    constructor() {
+        this.inventory = {} as Record<Enum, number>;
     }
 
     getKeyList(): Enum[] {
@@ -54,5 +59,14 @@ export class Inventory<Enum extends string> {
             newInventory.set(key, this.get(key));
         }
         return newInventory;
+    }
+
+    isEmpty(): boolean {
+        for (const key of this.getKeyList()) {
+            if (this.get(key) > 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
