@@ -1,13 +1,19 @@
 import * as fs from 'fs';
+import { Inventory } from './Inventory';
+import { Robot } from './Robot';
+import { RobotShop } from './RobotShop';
+import { type ResourceTypeEnum } from './types';
 
 export class ShopLoader {
-    private static readonly pattern: string = '/[0-9]+/ig';
+    private static readonly pattern = /[0-9]+/gi;
     private readonly blueprints: BlueprintContainer[] = [];
 
     load(): void {
-        const allBlueprints = fs.readFileSync('./', 'utf8');
+        const allBlueprints: string = fs.readFileSync('./blueprints.txt', 'utf8');
         allBlueprints.split('\n').forEach((blueprint) => {
-            this.blueprints.push(this.parseBlueprint(blueprint));
+            if (blueprint !== '') {
+                this.blueprints.push(this.parseBlueprint(blueprint));
+            }
         });
     }
 
@@ -24,6 +30,65 @@ export class ShopLoader {
             new RobotCost(parseInt(data[5]), 0, parseInt(data[6])),
         );
     }
+
+    getAllBlueprints(): RobotShop[] {
+        const robotShops: RobotShop[] = [];
+        this.blueprints.forEach((blueprint) => {
+            robotShops.push(this.getBlueprint(blueprint.getId()));
+        });
+        return robotShops;
+    }
+
+    getBlueprint(id: number): RobotShop {
+        const robotShop = new RobotShop();
+        robotShop.registerRobot(
+            new Robot('ore-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+                ore: this.blueprints[id].getOreRC().getOre(),
+                clay: this.blueprints[id].getOreRC().getClay(),
+                obsidian: this.blueprints[id].getOreRC().getObsidian(),
+            }),
+        );
+        robotShop.registerRobot(
+            new Robot('clay-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+                ore: this.blueprints[id].getClayRC().getOre(),
+                clay: this.blueprints[id].getClayRC().getClay(),
+                obsidian: this.blueprints[id].getClayRC().getObsidian(),
+            }),
+        );
+        robotShop.registerRobot(
+            new Robot('obsidian-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+                ore: this.blueprints[id].getObsidianRC().getOre(),
+                clay: this.blueprints[id].getObsidianRC().getClay(),
+                obsidian: this.blueprints[id].getObsidianRC().getObsidian(),
+            }),
+        );
+        robotShop.registerRobot(
+            new Robot('geode-cracking', new Inventory<ResourceTypeEnum>().with('ore', 1), {
+                ore: this.blueprints[id].getGeodeRC().getOre(),
+                clay: this.blueprints[id].getGeodeRC().getClay(),
+                obsidian: this.blueprints[id].getGeodeRC().getObsidian(),
+            }),
+        );
+        return robotShop;
+    }
+
+    printBlueprint(id: number): void {
+        console.log(
+            `Robot ${id}:\n` +
+                `ore: ${this.blueprints[id].getOreRC().getOre()}, clay: ${this.blueprints[id]
+                    .getOreRC()
+                    .getClay()}, obsidian: ${this.blueprints[id].getOreRC().getObsidian()}\n` +
+                `ore: ${this.blueprints[id].getClayRC().getOre()}, clay: ${this.blueprints[id]
+                    .getClayRC()
+                    .getClay()}, obsidian: ${this.blueprints[id].getClayRC().getObsidian()}\n` +
+                `ore: ${this.blueprints[id].getObsidianRC().getOre()}, clay: ${this.blueprints[id]
+                    .getObsidianRC()
+                    .getClay()}, obsidian: ${this.blueprints[id].getObsidianRC().getObsidian()}\n` +
+                `ore: ${this.blueprints[id].getGeodeRC().getOre()}, clay: ${this.blueprints[id]
+                    .getGeodeRC()
+                    .getClay()}, obsidian: ${this.blueprints[id].getGeodeRC().getObsidian()}\n`,
+        );
+    }
 }
 
 class RobotCost {
@@ -35,6 +100,18 @@ class RobotCost {
         this.ore = ore;
         this.clay = clay;
         this.obsidian = obsidian;
+    }
+
+    getOre(): number {
+        return this.ore;
+    }
+
+    getClay(): number {
+        return this.clay;
+    }
+
+    getObsidian(): number {
+        return this.obsidian;
     }
 }
 
@@ -51,5 +128,25 @@ class BlueprintContainer {
         this.clayRC = clayRC;
         this.obsidianRC = obsidianRC;
         this.geodeRC = geodeRC;
+    }
+
+    getId(): number {
+        return this.id;
+    }
+
+    getOreRC(): RobotCost {
+        return this.oreRC;
+    }
+
+    getClayRC(): RobotCost {
+        return this.clayRC;
+    }
+
+    getObsidianRC(): RobotCost {
+        return this.obsidianRC;
+    }
+
+    getGeodeRC(): RobotCost {
+        return this.geodeRC;
     }
 }
