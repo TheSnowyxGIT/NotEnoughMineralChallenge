@@ -4,7 +4,7 @@ import { State } from './State';
 
 export class Runner {
     private readonly shop: RobotShop;
-    private readonly initialState: State;
+    private initialState: State;
 
     constructor(robotShop: RobotShop) {
         this.shop = robotShop;
@@ -12,6 +12,7 @@ export class Runner {
     }
 
     public setInitialRobots(): void {
+        this.initialState = new State(this.shop, 1);
         for (const robotName of this.shop.getRobotNames()) {
             if (this.shop.getInitialRobotName() === robotName) {
                 this.initialState.robots.add(robotName, 1);
