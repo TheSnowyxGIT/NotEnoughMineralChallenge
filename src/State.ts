@@ -63,21 +63,8 @@ export class State {
     }
 
     public isBetterThan(other: State): boolean {
+        // todo check number of geode robots
         return this.resources.geode > other.resources.geode;
-    }
-
-    public isEquals(other: State): boolean {
-        const sameResources =
-            this.resources.ore === other.resources.ore &&
-            this.resources.clay === other.resources.clay &&
-            this.resources.obsidian === other.resources.obsidian &&
-            this.resources.geode === other.resources.geode;
-        const sameRobots =
-            this.robots.ore === other.robots.ore &&
-            this.robots.clay === other.robots.clay &&
-            this.robots.obsidian === other.robots.obsidian &&
-            this.robots.geode === other.robots.geode;
-        return sameResources && sameRobots;
     }
 
     public getHash(): string {
@@ -132,6 +119,21 @@ export class State {
     public canAfford(robotType: ResourceType): boolean {
         const shop = Shop.getInstance();
         return shop.canAfford(robotType, this);
+    }
+
+    public isBeneficialToBuy(robotType: ResourceType): boolean {
+        if (robotType === ResourceTypeEnum.GEODE) {
+            return true;
+        }
+        const shop = Shop.getInstance();
+        const maxPriceOfSpecificResource = shop.getMaxPriceOfSpecificResource(robotType);
+        const amount = this.resources[robotType];
+        const minutesLeft = this.maxTime - this.time; // we do not take the last minute because we can't buy anything
+        const maxAmountThatCanBeUsed = maxPriceOfSpecificResource * minutesLeft;
+        if (amount >= maxAmountThatCanBeUsed) {
+            return false;
+        }
+        return true;
     }
 
     public showLogs(): void {

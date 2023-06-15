@@ -60,4 +60,15 @@ export class Shop {
             state.resources[resourceType as ResourceType] -= this.getCost(robotType, resourceType as ResourceType);
         }
     }
+
+    public getMaxPriceOfSpecificResource(resourceType: ResourceType): number {
+        let maxPrice = 0;
+        for (const robotType of Object.values(ResourceTypeEnum)) {
+            const price = this.getCost(robotType as ResourceType, resourceType);
+            if (price > maxPrice) {
+                maxPrice = price;
+            }
+        }
+        return maxPrice;
+    }
 }
