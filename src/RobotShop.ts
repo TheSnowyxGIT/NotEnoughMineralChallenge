@@ -39,7 +39,7 @@ export class RobotShop {
     canAfford(robotName: string, inventory: ItemRegistry<ResourceTypeEnum>): boolean {
         const price = this.getPrice(robotName);
         for (const resourceType of Object.keys(price)) {
-            if (inventory.get(resourceType as ResourceTypeEnum) < price[resourceType]) {
+            if (inventory.getAmount(resourceType as ResourceTypeEnum) < price[resourceType]) {
                 return false;
             }
         }
@@ -50,7 +50,7 @@ export class RobotShop {
         const price = this.getPrice(robotName);
         for (const resourceType of Object.keys(price)) {
             const resourcePrice = price[resourceType] as number;
-            inventory.remove(resourceType as ResourceTypeEnum, resourcePrice);
+            inventory.removeAmount(resourceType as ResourceTypeEnum, resourcePrice);
         }
     }
 

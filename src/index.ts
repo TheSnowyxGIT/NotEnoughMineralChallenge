@@ -1,36 +1,20 @@
-/*
-const shop = new RobotShop();
-shop.registerRobot(
-    new Robot('ore-robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
-        ore: 4,
-    }),
-);
-shop.registerRobot(
-    new Robot('clay-robot', new Inventory<ResourceTypeEnum>().with('clay', 1), {
-        ore: 2,
-    }),
-);
-shop.registerRobot(
-    new Robot('obsidian-robot', new Inventory<ResourceTypeEnum>().with('obsidian', 1), {
-        ore: 3,
-        clay: 14,
-    }),
-);
-shop.registerRobot(
-    new Robot('geode-robot', new Inventory<ResourceTypeEnum>().with('geode', 1), {
-        ore: 2,
-        obsidian: 7,
-    }),
-);
-*/
-
 import { Runner } from './Runner';
 import { ShopLoader } from './ShopLoader';
 
+const shopLoader = new ShopLoader('./blueprints-demo.txt');
+shopLoader.load();
+
+const shop = shopLoader.getShop(0);
+
+const runner = new Runner(shop, 'geode');
+
+runner.run(24);
+/*
 const shopLoader = new ShopLoader('./blueprints.txt');
 shopLoader.load();
 
 // shopLoader.printShop(0);
+
 
 const shops = shopLoader.getAllShops();
 
@@ -50,3 +34,4 @@ const sum = scores.reduce((a, b) => a + b, 0);
 console.log();
 console.log(`Sum score: ${sum}`);
 console.log(`Average score: ${sum / scores.length}`);
+*/

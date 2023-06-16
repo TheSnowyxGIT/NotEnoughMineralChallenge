@@ -1,114 +1,79 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 export class ItemRegistry<Keys extends string> {
-    private inventory: Record<Keys, number>;
+    private registry: Record<Keys, number> = {} as Record<Keys, number>;
 
-    static multiply<Enum extends string>(inventory: ItemRegistry<Enum>, multiplier: number): ItemRegistry<Enum> {
-        const multipliedInventory = new ItemRegistry<Enum>();
-        for (const key of inventory.getKeyList()) {
-            multipliedInventory.set(key, inventory.get(key) * multiplier);
+    public get itemsNames(): Keys[] {
+        return Object.keys(this.registry) as Keys[];
+    }
+
+    public get nonEmptyItemsNames(): Keys[] {
+        return this.itemsNames.filter((key) => this.has(key));
+    }
+
+    public getAmount(key: Keys): number {
+        return this.registry[key] === undefined ? 0 : this.registry[key];
+    }
+
+    public setAmount(key: Keys, value: number): void {
+        this.registry[key] = value;
+    }
+
+    public addAmount(key: Keys, value: number): void {
+        this.setAmount(key, this.getAmount(key) + value);
+    }
+
+    public removeAmount(key: Keys, value: number): void {
+        this.setAmount(key, this.getAmount(key) - value);
+    }
+
+    public addRegistry(registry: ItemRegistry<Keys>): void {
+        for (const key of registry.itemsNames) {
+            this.addAmount(key, registry.getAmount(key));
         }
-        return multipliedInventory;
     }
 
-    constructor() {
-        this.inventory = {} as Record<Keys, number>;
-    }
-
-    getKeyList(): Keys[] {
-        return Object.keys(this.inventory) as Keys[];
-    }
-
-    get(key: Keys): number {
-        return this.inventory[key] === undefined ? 0 : this.inventory[key];
-    }
-
-    set(key: Keys, value: number): void {
-        this.inventory[key] = value;
-    }
-
-    add(key: Keys, value: number): void {
-        this.set(key, this.get(key) + value);
-    }
-
-    with(key: Keys, value: number): ItemRegistry<Keys> {
-        this.set(key, value);
+    public with(key: Keys, value: number): ItemRegistry<Keys> {
+        this.setAmount(key, value);
         return this;
     }
 
-    addAll(inventory: ItemRegistry<Keys>): void {
-        for (const key of inventory.getKeyList()) {
-            this.add(key, inventory.get(key));
-        }
+    public deepCopy(): ItemRegistry<Keys> {
+        const newRegistry = new ItemRegistry<Keys>();
+        newRegistry.registry = Object.assign({}, this.registry);
+        return newRegistry;
     }
 
-    remove(key: Keys, value: number): void {
-        this.set(key, this.get(key) - value);
+    public has(key: Keys): boolean {
+        return this.getAmount(key) > 0;
     }
 
-    toString(filterKeys: Keys[] | null = null): string {
-        if (filterKeys === null) {
-            filterKeys = this.getKeyList();
-        }
-        return filterKeys
-            .map((key) => {
-                return `${this.inventory[key]} ${key}`;
-            })
-            .join(', ');
-    }
-
-    copy(): ItemRegistry<Keys> {
-        const newInventory = new ItemRegistry<Keys>();
-        newInventory.inventory = Object.assign({}, this.inventory);
-        return newInventory;
-    }
-
-    getNonEmptyKeys(): Keys[] {
-        return this.getKeyList().filter((key) => this.get(key) > 0);
-    }
-
-    isEmpty(): boolean {
-        for (const key of this.getKeyList()) {
-            if (this.get(key) > 0) {
+    public isEmpty(): boolean {
+        for (const key of this.itemsNames) {
+            if (this.has(key)) {
                 return false;
             }
         }
         return true;
     }
-}
-/*
-export class IR<Keys extends string> {
-    private registry: Record<Keys, number>;
 
-    private get
-
-    public get(key: Keys): number {
-        return this.registry[key] === undefined ? 0 : this.registry[key];
-    }
-
-    public set(key: Keys, value: number): void {
-        this.registry[key] = value;
-    }
-
-    public with(key: Keys, value: number): IR<Keys> {
-        this.set(key, value);
-        return this;
-    }
-
-    public deepCopy(): IR<Keys> {
-        const newRegistry = new IR<Keys>();
-        newRegistry.registry = Object.assign({}, this.registry);
-        return newRegistry;
-    }
-
-    public contains(key: Keys): boolean {
-        return this.get(key) > 0;
-    }
-
-    public isEmpty(): boolean {
-        for (const key of this.getKeyList()) {
-            
+    public toString(filterKeys: Keys[] | null = null): string {
+        if (filterKeys === null) {
+            filterKeys = this.itemsNames;
         }
-        return true;
+        return filterKeys
+            .map((key) => {
+                return `${this.registry[key]} ${key}`;
+            })
+            .join(', ');
+    }
+
+    // * static methods
+
+    static multiply<Enum extends string>(registry: ItemRegistry<Enum>, multiplier: number): ItemRegistry<Enum> {
+        const multipliedRegistry = new ItemRegistry<Enum>();
+        for (const key of registry.itemsNames) {
+            multipliedRegistry.setAmount(key, registry.getAmount(key) * multiplier);
+        }
+        return multipliedRegistry;
     }
 }
-*/

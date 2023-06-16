@@ -5,7 +5,7 @@ import { type ResourceTypeEnum } from './types';
 
 export class State implements HashAble {
     // * static variables
-    public static loggerActivated: boolean = false;
+    public static loggerActivated: boolean = true;
 
     // * instance variables
     private readonly shop: RobotShop;
@@ -36,8 +36,8 @@ export class State implements HashAble {
 
     public buildCopy(parent?: State | null): State {
         const newState = new State(this.shop, this.currentMinute, this.maxMinute, this.goalMineral);
-        newState.robots = this.robots.copy();
-        newState.resources = this.resources.copy();
+        newState.robots = this.robots.deepCopy();
+        newState.resources = this.resources.deepCopy();
         newState.parent = parent === undefined ? this : parent;
         return newState;
     }
@@ -55,14 +55,14 @@ export class State implements HashAble {
     }
 
     public collectMinerals(): void {
-        for (const robotName of this.robots.getKeyList()) {
-            const numberOfRobots = this.robots.get(robotName);
+        for (const robotName of this.robots.itemsNames) {
+            const numberOfRobots = this.robots.getAmount(robotName);
             const loot = this.shop.getRobot(robotName).getLoot();
             const multiplyLoot = ItemRegistry.multiply<ResourceTypeEnum>(loot, numberOfRobots);
-            this.resources.addAll(multiplyLoot);
+            this.resources.addRegistry(multiplyLoot);
 
             if (State.loggerActivated && numberOfRobots > 0) {
-                const lootResourceNames = loot.getNonEmptyKeys();
+                const lootResourceNames = loot.nonEmptyItemsNames;
                 this.logs.push(
                     `${numberOfRobots} ${robotName} collects ${multiplyLoot.toString()}, you now have ${this.resources.toString(
                         lootResourceNames,
@@ -85,10 +85,10 @@ export class State implements HashAble {
 
     public gettingRobot(): void {
         if (this.robotWaitingToBeBuild !== null) {
-            this.robots.add(this.robotWaitingToBeBuild, 1);
+            this.robots.addAmount(this.robotWaitingToBeBuild, 1);
             if (State.loggerActivated) {
                 this.logs.push(
-                    `The new ${this.robotWaitingToBeBuild} is ready; you now have ${this.robots.get(
+                    `The new ${this.robotWaitingToBeBuild} is ready; you now have ${this.robots.getAmount(
                         this.robotWaitingToBeBuild,
                     )} of them.`,
                 );
@@ -106,19 +106,19 @@ export class State implements HashAble {
     }
 
     public isBetterThan(other: State): boolean {
-        return this.resources.get(this.goalMineral) > other.resources.get(this.goalMineral);
+        return this.resources.getAmount(this.goalMineral) > other.resources.getAmount(this.goalMineral);
     }
 
     public getHash(): string {
         const padSize = 5;
         const hashResources =
-            `${this.resources.get('ore')}`.padEnd(padSize) +
-            `${this.resources.get('clay')}`.padEnd(padSize) +
-            `${this.resources.get('obsidian')}`.padEnd(padSize) +
-            `${this.resources.get('geode')}`.padEnd(padSize);
+            `${this.resources.getAmount('ore')}`.padEnd(padSize) +
+            `${this.resources.getAmount('clay')}`.padEnd(padSize) +
+            `${this.resources.getAmount('obsidian')}`.padEnd(padSize) +
+            `${this.resources.getAmount('geode')}`.padEnd(padSize);
         let hashRobots: string = '';
-        for (const robotName of this.robots.getKeyList()) {
-            hashRobots += `${this.robots.get(robotName)}`.padEnd(padSize);
+        for (const robotName of this.robots.itemsNames) {
+            hashRobots += `${this.robots.getAmount(robotName)}`.padEnd(padSize);
         }
         return hashResources + hashRobots;
     }
@@ -126,7 +126,7 @@ export class State implements HashAble {
     public isBeneficialToBuyRobot(robotName: string): boolean {
         const robot = this.shop.getRobot(robotName);
         const loot = robot.getLoot();
-        const resourcesKeys = loot.getNonEmptyKeys();
+        const resourcesKeys = loot.itemsNames;
 
         if (resourcesKeys.includes(this.goalMineral)) {
             return true;
@@ -134,7 +134,7 @@ export class State implements HashAble {
 
         for (const resource of resourcesKeys) {
             const maxPriceOfSpecificResource = this.shop.getMaxPriceOfSpecificResource(resource);
-            const amount = this.resources.get(resource);
+            const amount = this.resources.getAmount(resource);
             const minutesLeft = this.maxMinute - this.currentMinute; // we do not take the last minute because we can't buy anything
             const maxAmountThatCanBeUsed = maxPriceOfSpecificResource * minutesLeft;
             if (amount < maxAmountThatCanBeUsed) {

@@ -1,6 +1,7 @@
 import { type RobotShop } from './RobotShop';
 import { State } from './State';
 import { MemoryCache } from './generics/MemoryCache';
+import { Queue } from './generics/Queue';
 import { type ResourceTypeEnum } from './types';
 
 export class Runner {
@@ -23,9 +24,9 @@ export class Runner {
 
         for (const robotName of this.shop.getRobotNames()) {
             if (this.shop.getStartRobotName() === robotName) {
-                this.firstState.robots.add(robotName, 1);
+                this.firstState.robots.addAmount(robotName, 1);
             } else {
-                this.firstState.robots.add(robotName, 0);
+                this.firstState.robots.addAmount(robotName, 0);
             }
         }
     }
@@ -46,7 +47,7 @@ export class Runner {
     }
 
     private calculateQualityLevel(state: State): number {
-        const qualityLevel = state.resources.get(this.goalMineral);
+        const qualityLevel = state.resources.getAmount(this.goalMineral);
         return qualityLevel * this.shop.blueprintId;
     }
 
@@ -92,5 +93,76 @@ export class Runner {
         return subStates.reduce((prev, curr) => {
             return prev.isBetterThan(curr) ? prev : curr;
         }, ds);
+    }
+
+    public run_bfs(minutes: number): State {
+        if (minutes < 1) {
+            throw new Error('The number of minutes must be greater than 0');
+        }
+        this.initFirstState(minutes);
+        this.cache = new MemoryCache();
+
+        const lastMinuteStates: State[] = [];
+
+        const queue = new Queue<State>();
+        queue.enqueue(this.firstState);
+        let isSentinel = true;
+
+        while (!queue.is_empty()) {
+            let state = queue.dequeue();
+            let parent: State | null = null;
+
+            if (isSentinel) {
+                isSentinel = false;
+            } else {
+                parent = state;
+                state = state.buildCopy().incrementMinutes();
+            }
+
+            if (this.cache.isIn(state)) {
+                continue;
+            } else {
+                this.cache.set(state, true);
+            }
+
+            const isLastMinute = state.isLastMinute();
+
+            // * we will explore all the recursive states depending of the robot which have been bought
+            if (!isLastMinute) {
+                for (const robotName of this.shop.getRobotNames()) {
+                    if (state.canAffordRobot(robotName)) {
+                        if (!state.isBeneficialToBuyRobot(robotName)) {
+                            continue;
+                        }
+                        const newState = state.buildCopy(parent);
+                        newState.buyRobot(robotName);
+                        newState.collectMinerals();
+                        newState.gettingRobot();
+                        queue.enqueue(newState);
+                    }
+                }
+            }
+
+            // * we explore the case were no robot is bought
+            const defaultState = state.buildCopy(parent);
+            defaultState.collectMinerals();
+            if (!isLastMinute) {
+                queue.enqueue(defaultState);
+            } else {
+                lastMinuteStates.push(defaultState);
+            }
+        }
+
+        if (lastMinuteStates.length === 0) {
+            throw new Error('No last minute state found');
+        }
+
+        const finalState = lastMinuteStates.reduce((prev, curr) => {
+            return prev.isBetterThan(curr) ? prev : curr;
+        }, lastMinuteStates[0]);
+
+        finalState.showLogs();
+
+        return finalState;
     }
 }
