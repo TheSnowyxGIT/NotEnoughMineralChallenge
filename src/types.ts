@@ -1,1 +1,1 @@
-export type ResourceTypeEnum = 'ore' | 'clay' | 'obsidian' | 'geode';
+export type ResourceTypeEnum = 'ore' | 'clay' | 'obsidian' | 'geode' | 'diamond';

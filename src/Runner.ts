@@ -95,7 +95,7 @@ export class Runner {
         }, ds);
     }
 
-    public run_bfs(minutes: number): State {
+    public run_bfs(minutes: number): number {
         if (minutes < 1) {
             throw new Error('The number of minutes must be greater than 0');
         }
@@ -163,6 +163,71 @@ export class Runner {
 
         finalState.showLogs();
 
-        return finalState;
+        return this.calculateQualityLevel(finalState);
+    }
+
+    public run_dfs(minutes: number): number {
+        if (minutes < 1) {
+            throw new Error('The number of minutes must be greater than 0');
+        }
+        this.initFirstState(minutes);
+        this.cache = new MemoryCache();
+
+        const lastMinuteStates: State[] = [];
+        const stack: State[] = [];
+        stack.push(this.firstState);
+        let isSentinel = true;
+
+        while (stack.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            let state = stack.pop()!;
+            let parent: State | null = null;
+
+            if (!isSentinel) {
+                parent = state;
+                state = state.buildCopy().incrementMinutes();
+            } else {
+                isSentinel = false;
+            }
+
+            if (this.cache.isIn(state)) {
+                continue;
+            } else {
+                this.cache.set(state, true);
+            }
+
+            const isLastMinute = state.isLastMinute();
+            if (!isLastMinute) {
+                for (const robotName of this.shop.getRobotNames()) {
+                    if (state.canAffordRobot(robotName) && state.isBeneficialToBuyRobot(robotName)) {
+                        const newState = state.buildCopy(parent);
+                        newState.buyRobot(robotName);
+                        newState.collectMinerals();
+                        newState.gettingRobot();
+                        stack.push(newState);
+                    }
+                }
+            }
+
+            const defaultState = state.buildCopy(parent);
+            defaultState.collectMinerals();
+            if (!isLastMinute) {
+                stack.push(defaultState);
+            } else {
+                lastMinuteStates.push(defaultState);
+            }
+        }
+
+        if (lastMinuteStates.length === 0) {
+            throw new Error('No last minute state found');
+        }
+
+        const finalState = lastMinuteStates.reduce((prev, curr) => {
+            return prev.isBetterThan(curr) ? prev : curr;
+        });
+
+        finalState.showLogs();
+
+        return this.calculateQualityLevel(finalState);
     }
 }

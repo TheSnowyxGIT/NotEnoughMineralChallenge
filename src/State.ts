@@ -5,7 +5,7 @@ import { type ResourceTypeEnum } from './types';
 
 export class State implements HashAble {
     // * static variables
-    public static loggerActivated: boolean = true;
+    public static loggerActivated: boolean = false;
 
     // * instance variables
     private readonly shop: RobotShop;
@@ -151,6 +151,7 @@ export class State implements HashAble {
         }
         const parents: State[] = [];
         let current: State | null = this.parent;
+        parents.unshift(this);
         while (current !== null) {
             parents.unshift(current);
             current = current.parent;
