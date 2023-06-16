@@ -1,7 +1,7 @@
 import * as fs from 'fs';
-import { Inventory } from './Inventory';
 import { Robot } from './Robot';
 import { RobotShop } from './RobotShop';
+import { ItemRegistry } from './generics/ItemRegistry';
 import { type ResourceTypeEnum } from './types';
 
 export class ShopLoader {
@@ -38,60 +38,60 @@ export class ShopLoader {
 
     getAllShops(): RobotShop[] {
         const robotShops: RobotShop[] = [];
-        this.blueprints.forEach((blueprint) => {
-            robotShops.push(this.getShop(blueprint.getId()));
-        });
+        for (let i = 0; i < this.blueprints.length; i++) {
+            robotShops.push(this.getShop(i));
+        }
         return robotShops;
     }
 
-    getShop(id: number): RobotShop {
-        const robotShop = new RobotShop();
+    getShop(index: number): RobotShop {
+        const robotShop = new RobotShop(this.blueprints[index].getId());
         robotShop.registerRobot(
-            new Robot('ore-collecting robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
-                ore: this.blueprints[id].getOreRC().getOre(),
-                clay: this.blueprints[id].getOreRC().getClay(),
-                obsidian: this.blueprints[id].getOreRC().getObsidian(),
+            new Robot('ore-collecting robot', new ItemRegistry<ResourceTypeEnum>().with('ore', 1), {
+                ore: this.blueprints[index].getOreRC().getOre(),
+                clay: this.blueprints[index].getOreRC().getClay(),
+                obsidian: this.blueprints[index].getOreRC().getObsidian(),
             }),
         );
         robotShop.registerRobot(
-            new Robot('clay-collecting robot', new Inventory<ResourceTypeEnum>().with('clay', 1), {
-                ore: this.blueprints[id].getClayRC().getOre(),
-                clay: this.blueprints[id].getClayRC().getClay(),
-                obsidian: this.blueprints[id].getClayRC().getObsidian(),
+            new Robot('clay-collecting robot', new ItemRegistry<ResourceTypeEnum>().with('clay', 1), {
+                ore: this.blueprints[index].getClayRC().getOre(),
+                clay: this.blueprints[index].getClayRC().getClay(),
+                obsidian: this.blueprints[index].getClayRC().getObsidian(),
             }),
         );
         robotShop.registerRobot(
-            new Robot('obsidian-collecting robot', new Inventory<ResourceTypeEnum>().with('obsidian', 1), {
-                ore: this.blueprints[id].getObsidianRC().getOre(),
-                clay: this.blueprints[id].getObsidianRC().getClay(),
-                obsidian: this.blueprints[id].getObsidianRC().getObsidian(),
+            new Robot('obsidian-collecting robot', new ItemRegistry<ResourceTypeEnum>().with('obsidian', 1), {
+                ore: this.blueprints[index].getObsidianRC().getOre(),
+                clay: this.blueprints[index].getObsidianRC().getClay(),
+                obsidian: this.blueprints[index].getObsidianRC().getObsidian(),
             }),
         );
         robotShop.registerRobot(
-            new Robot('geode-cracking', new Inventory<ResourceTypeEnum>().with('geode', 1), {
-                ore: this.blueprints[id].getGeodeRC().getOre(),
-                clay: this.blueprints[id].getGeodeRC().getClay(),
-                obsidian: this.blueprints[id].getGeodeRC().getObsidian(),
+            new Robot('geode-cracking', new ItemRegistry<ResourceTypeEnum>().with('geode', 1), {
+                ore: this.blueprints[index].getGeodeRC().getOre(),
+                clay: this.blueprints[index].getGeodeRC().getClay(),
+                obsidian: this.blueprints[index].getGeodeRC().getObsidian(),
             }),
         );
         return robotShop;
     }
 
-    printShop(id: number): void {
+    printShop(index: number): void {
         console.log(
-            `Robot ${id}:\n` +
-                `ore: ${this.blueprints[id].getOreRC().getOre()}, clay: ${this.blueprints[id]
+            `Robot ${this.blueprints[index].getId()}:\n` +
+                `ore: ${this.blueprints[index].getOreRC().getOre()}, clay: ${this.blueprints[index]
                     .getOreRC()
-                    .getClay()}, obsidian: ${this.blueprints[id].getOreRC().getObsidian()}\n` +
-                `ore: ${this.blueprints[id].getClayRC().getOre()}, clay: ${this.blueprints[id]
+                    .getClay()}, obsidian: ${this.blueprints[index].getOreRC().getObsidian()}\n` +
+                `ore: ${this.blueprints[index].getClayRC().getOre()}, clay: ${this.blueprints[index]
                     .getClayRC()
-                    .getClay()}, obsidian: ${this.blueprints[id].getClayRC().getObsidian()}\n` +
-                `ore: ${this.blueprints[id].getObsidianRC().getOre()}, clay: ${this.blueprints[id]
+                    .getClay()}, obsidian: ${this.blueprints[index].getClayRC().getObsidian()}\n` +
+                `ore: ${this.blueprints[index].getObsidianRC().getOre()}, clay: ${this.blueprints[index]
                     .getObsidianRC()
-                    .getClay()}, obsidian: ${this.blueprints[id].getObsidianRC().getObsidian()}\n` +
-                `ore: ${this.blueprints[id].getGeodeRC().getOre()}, clay: ${this.blueprints[id]
+                    .getClay()}, obsidian: ${this.blueprints[index].getObsidianRC().getObsidian()}\n` +
+                `ore: ${this.blueprints[index].getGeodeRC().getOre()}, clay: ${this.blueprints[index]
                     .getGeodeRC()
-                    .getClay()}, obsidian: ${this.blueprints[id].getGeodeRC().getObsidian()}\n`,
+                    .getClay()}, obsidian: ${this.blueprints[index].getGeodeRC().getObsidian()}\n`,
         );
     }
 }
@@ -128,7 +128,7 @@ class BlueprintContainer {
     private readonly geodeRC: RobotCost;
 
     constructor(id: number, oreRC: RobotCost, clayRC: RobotCost, obsidianRC: RobotCost, geodeRC: RobotCost) {
-        this.id = --id;
+        this.id = id;
         this.oreRC = oreRC;
         this.clayRC = clayRC;
         this.obsidianRC = obsidianRC;

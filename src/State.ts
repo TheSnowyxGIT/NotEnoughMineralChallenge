@@ -1,76 +1,112 @@
-import { Inventory } from './Inventory';
 import { type RobotShop } from './RobotShop';
+import { type HashAble } from './generics/Hashable';
+import { ItemRegistry } from './generics/ItemRegistry';
 import { type ResourceTypeEnum } from './types';
 
-export class State {
-    public static maxMinutes: number = 24;
+export class State implements HashAble {
+    // * static variables
+    public static loggerActivated: boolean = false;
 
-    public robots: Inventory<string>;
-    public resources: Inventory<ResourceTypeEnum>;
+    // * instance variables
+    private readonly shop: RobotShop;
 
     public currentMinute: number;
+    public maxMinute: number;
+
+    public goalMineral: ResourceTypeEnum;
+
+    public robots: ItemRegistry<string>;
+    public resources: ItemRegistry<ResourceTypeEnum>;
+    public robotWaitingToBeBuild: string | null = null;
 
     public logs: string[] = [];
     public parent: State | null = null;
 
-    public robotWaitingToBeBuild: string | null = null;
-
-    private readonly shop: RobotShop;
-
-    constructor(robotShop: RobotShop, minutes: number) {
+    constructor(robotShop: RobotShop, minutes: number, maxMinute: number, goalMineral: ResourceTypeEnum) {
         this.shop = robotShop;
+
         this.currentMinute = minutes;
-        this.robots = new Inventory<string>();
-        this.resources = new Inventory<ResourceTypeEnum>();
-    }
+        this.maxMinute = maxMinute;
 
-    public initResources(): void {
-        this.resources.add('ore', 0);
-        this.resources.add('clay', 0);
-        this.resources.add('obsidian', 0);
-        this.resources.add('geode', 0);
-    }
+        this.goalMineral = goalMineral;
 
-    public setRobots(robots: Inventory<string>): void {
-        this.robots = robots;
-    }
-
-    public collect(): void {
-        for (const robotName of this.robots.getKeyList()) {
-            const numberOfRobots = this.robots.get(robotName);
-            const loot = this.shop.getRobot(robotName).getLoot();
-            const multiplyLoot = Inventory.multiply<ResourceTypeEnum>(loot, numberOfRobots);
-            this.resources.addAll(multiplyLoot);
-            if (!multiplyLoot.isEmpty()) {
-                this.logs.push(`${numberOfRobots} ${robotName} collects ${loot.toString()}, you now have XXX`);
-            }
-        }
-    }
-
-    public isDone(): boolean {
-        return this.currentMinute > State.maxMinutes;
-    }
-
-    public isLastMinute(): boolean {
-        return this.currentMinute === State.maxMinutes;
-    }
-
-    public getNextState(): State {
-        this.currentMinute += 1;
-        return this;
+        this.robots = new ItemRegistry<string>();
+        this.resources = new ItemRegistry<ResourceTypeEnum>();
     }
 
     public buildCopy(parent?: State | null): State {
-        const newState = new State(this.shop, this.currentMinute);
+        const newState = new State(this.shop, this.currentMinute, this.maxMinute, this.goalMineral);
         newState.robots = this.robots.copy();
         newState.resources = this.resources.copy();
         newState.parent = parent === undefined ? this : parent;
         return newState;
     }
 
+    public isDone(): boolean {
+        return this.currentMinute > this.maxMinute;
+    }
+
+    public isLastMinute(): boolean {
+        return this.currentMinute === this.maxMinute;
+    }
+
+    public setRobots(robots: ItemRegistry<string>): void {
+        this.robots = robots;
+    }
+
+    public collectMinerals(): void {
+        for (const robotName of this.robots.getKeyList()) {
+            const numberOfRobots = this.robots.get(robotName);
+            const loot = this.shop.getRobot(robotName).getLoot();
+            const multiplyLoot = ItemRegistry.multiply<ResourceTypeEnum>(loot, numberOfRobots);
+            this.resources.addAll(multiplyLoot);
+
+            if (State.loggerActivated && numberOfRobots > 0) {
+                const lootResourceNames = loot.getNonEmptyKeys();
+                this.logs.push(
+                    `${numberOfRobots} ${robotName} collects ${multiplyLoot.toString()}, you now have ${this.resources.toString(
+                        lootResourceNames,
+                    )}.`,
+                );
+            }
+        }
+    }
+
+    public buyRobot(robotName: string): void {
+        if (this.shop.canAfford(robotName, this.resources)) {
+            this.robotWaitingToBeBuild = robotName;
+            this.shop.deductPrice(this.robotWaitingToBeBuild, this.resources);
+            if (State.loggerActivated) {
+                const priceString = this.shop.priceToString(robotName);
+                this.logs.push(`Spend ${priceString} to start building a ${robotName}.`);
+            }
+        }
+    }
+
+    public gettingRobot(): void {
+        if (this.robotWaitingToBeBuild !== null) {
+            this.robots.add(this.robotWaitingToBeBuild, 1);
+            if (State.loggerActivated) {
+                this.logs.push(
+                    `The new ${this.robotWaitingToBeBuild} is ready; you now have ${this.robots.get(
+                        this.robotWaitingToBeBuild,
+                    )} of them.`,
+                );
+            }
+        }
+    }
+
+    public canAffordRobot(robotName: string): boolean {
+        return this.shop.canAfford(robotName, this.resources);
+    }
+
+    public incrementMinutes(): State {
+        this.currentMinute += 1;
+        return this;
+    }
+
     public isBetterThan(other: State): boolean {
-        // todo check number of geode robots
-        return this.resources.get('geode') > other.resources.get('geode');
+        return this.resources.get(this.goalMineral) > other.resources.get(this.goalMineral);
     }
 
     public getHash(): string {
@@ -87,46 +123,32 @@ export class State {
         return hashResources + hashRobots;
     }
 
-    public buy(robotName: string): void {
-        if (this.shop.canAfford(robotName, this.resources)) {
-            this.robotWaitingToBeBuild = robotName;
-            this.shop.deductPrice(this.robotWaitingToBeBuild, this.resources);
-            const priceString = this.shop.priceToString(robotName);
-            this.logs.push(`Spend ${priceString} to start building a ${robotName}.`);
-        }
-    }
+    public isBeneficialToBuyRobot(robotName: string): boolean {
+        const robot = this.shop.getRobot(robotName);
+        const loot = robot.getLoot();
+        const resourcesKeys = loot.getNonEmptyKeys();
 
-    public gettingRobot(): void {
-        if (this.robotWaitingToBeBuild !== null) {
-            this.robots.add(this.robotWaitingToBeBuild, 1);
-            this.logs.push(
-                `The new ${this.robotWaitingToBeBuild} is ready; you now have ${this.robots.get(
-                    this.robotWaitingToBeBuild,
-                )} of them.`,
-            );
-        }
-    }
-
-    public canAfford(robotName: string): boolean {
-        return this.shop.canAfford(robotName, this.resources);
-    }
-
-    /* public isBeneficialToBuy(robotName: string): boolean {
-        if (robotName === 'XXXXX') {
-            // TODO
+        if (resourcesKeys.includes(this.goalMineral)) {
             return true;
         }
-        const maxPriceOfSpecificResource = this.shop.getMaxPriceOfSpecificResource(robotType);
-        const amount = this.resources[robotType];
-        const minutesLeft = this.maxTime - this.time; // we do not take the last minute because we can't buy anything
-        const maxAmountThatCanBeUsed = maxPriceOfSpecificResource * minutesLeft;
-        if (amount >= maxAmountThatCanBeUsed) {
-            return false;
+
+        for (const resource of resourcesKeys) {
+            const maxPriceOfSpecificResource = this.shop.getMaxPriceOfSpecificResource(resource);
+            const amount = this.resources.get(resource);
+            const minutesLeft = this.maxMinute - this.currentMinute; // we do not take the last minute because we can't buy anything
+            const maxAmountThatCanBeUsed = maxPriceOfSpecificResource * minutesLeft;
+            if (amount < maxAmountThatCanBeUsed) {
+                return true;
+            }
         }
-        return true;
-    } */
+        return false;
+    }
 
     public showLogs(): void {
+        if (!State.loggerActivated) {
+            console.log(`No logs to show.`);
+            return;
+        }
         const parents: State[] = [];
         let current: State | null = this.parent;
         while (current !== null) {

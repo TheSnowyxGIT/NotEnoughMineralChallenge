@@ -1,9 +1,4 @@
-import { Inventory } from './Inventory';
-import { Robot } from './Robot';
-import { RobotShop } from './RobotShop';
-import { Runner } from './Runner';
-import { type ResourceTypeEnum } from './types';
-
+/*
 const shop = new RobotShop();
 shop.registerRobot(
     new Robot('ore-robot', new Inventory<ResourceTypeEnum>().with('ore', 1), {
@@ -27,7 +22,31 @@ shop.registerRobot(
         obsidian: 7,
     }),
 );
+*/
 
-const runner = new Runner(shop);
+import { Runner } from './Runner';
+import { ShopLoader } from './ShopLoader';
 
-runner.run(24);
+const shopLoader = new ShopLoader('./blueprints.txt');
+shopLoader.load();
+
+// shopLoader.printShop(0);
+
+const shops = shopLoader.getAllShops();
+
+const scores: number[] = [];
+for (const shop of shops) {
+    console.log(`Running ${shop.blueprintId}`);
+
+    const runner = new Runner(shop, 'geode');
+
+    const score = runner.run(15);
+    scores.push(score);
+
+    console.log(`          score: ${score}`);
+}
+
+const sum = scores.reduce((a, b) => a + b, 0);
+console.log();
+console.log(`Sum score: ${sum}`);
+console.log(`Average score: ${sum / scores.length}`);

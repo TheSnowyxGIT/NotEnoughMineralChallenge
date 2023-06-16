@@ -1,14 +1,21 @@
-import { type Inventory } from './Inventory';
 import { type Robot, type RobotPrice } from './Robot';
+import { type ItemRegistry } from './generics/ItemRegistry';
 import { type ResourceTypeEnum } from './types';
 
 export class RobotShop {
     private readonly robots: Record<string, Robot> = {};
-    private initialRobotName: string;
+
+    private startRobotName: string;
+
+    public blueprintId: number;
+
+    constructor(blueprintId: number) {
+        this.blueprintId = blueprintId;
+    }
 
     registerRobot(robot: Robot): void {
-        if (this.initialRobotName === undefined) {
-            this.initialRobotName = robot.robotName;
+        if (this.startRobotName === undefined) {
+            this.startRobotName = robot.robotName;
         }
         this.robots[robot.robotName] = robot;
     }
@@ -29,7 +36,7 @@ export class RobotShop {
         return robot.getPrice();
     }
 
-    canAfford(robotName: string, inventory: Inventory<ResourceTypeEnum>): boolean {
+    canAfford(robotName: string, inventory: ItemRegistry<ResourceTypeEnum>): boolean {
         const price = this.getPrice(robotName);
         for (const resourceType of Object.keys(price)) {
             if (inventory.get(resourceType as ResourceTypeEnum) < price[resourceType]) {
@@ -39,7 +46,7 @@ export class RobotShop {
         return true;
     }
 
-    deductPrice(robotName: string, inventory: Inventory<ResourceTypeEnum>): void {
+    deductPrice(robotName: string, inventory: ItemRegistry<ResourceTypeEnum>): void {
         const price = this.getPrice(robotName);
         for (const resourceType of Object.keys(price)) {
             const resourcePrice = price[resourceType] as number;
@@ -50,6 +57,7 @@ export class RobotShop {
     priceToString(robotName: string): string {
         const price = this.getPrice(robotName);
         return Object.keys(price)
+            .filter((resourceType) => price[resourceType] !== undefined && price[resourceType] > 0)
             .map((resourceType) => {
                 const resourcePrice = price[resourceType] as number;
                 return `${resourcePrice} ${resourceType}`;
@@ -68,7 +76,7 @@ export class RobotShop {
         return maxPrice;
     }
 
-    getInitialRobotName(): string {
-        return this.initialRobotName;
+    getStartRobotName(): string {
+        return this.startRobotName;
     }
 }

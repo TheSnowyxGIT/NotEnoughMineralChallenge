@@ -1,65 +1,82 @@
-import { StateCache } from './Cache';
 import { type RobotShop } from './RobotShop';
 import { State } from './State';
+import { MemoryCache } from './generics/MemoryCache';
+import { type ResourceTypeEnum } from './types';
 
 export class Runner {
+    // * the shop is a class representing a blueprint
     private readonly shop: RobotShop;
-    private initialState: State;
 
-    constructor(robotShop: RobotShop) {
+    private firstState: State;
+
+    private readonly goalMineral: ResourceTypeEnum;
+
+    private cache: MemoryCache<boolean>;
+
+    constructor(robotShop: RobotShop, goalMineral: ResourceTypeEnum) {
         this.shop = robotShop;
-        this.setInitialRobots();
+        this.goalMineral = goalMineral;
     }
 
-    public setInitialRobots(): void {
-        this.initialState = new State(this.shop, 1);
+    public initFirstState(maxMinutes: number): void {
+        this.firstState = new State(this.shop, 1, maxMinutes, this.goalMineral);
+
         for (const robotName of this.shop.getRobotNames()) {
-            if (this.shop.getInitialRobotName() === robotName) {
-                this.initialState.robots.add(robotName, 1);
+            if (this.shop.getStartRobotName() === robotName) {
+                this.firstState.robots.add(robotName, 1);
             } else {
-                this.initialState.robots.add(robotName, 0);
+                this.firstState.robots.add(robotName, 0);
             }
         }
     }
 
-    public run(minutes: number): void {
+    public run(minutes: number): number {
         if (minutes < 1) {
             throw new Error('The number of minutes must be greater than 0');
         }
-        State.maxMinutes = minutes;
+        this.initFirstState(minutes);
+
+        this.cache = new MemoryCache();
+
         const finalState = this._run(null);
 
         finalState.showLogs();
+
+        return this.calculateQualityLevel(finalState);
+    }
+
+    private calculateQualityLevel(state: State): number {
+        const qualityLevel = state.resources.get(this.goalMineral);
+        return qualityLevel * this.shop.blueprintId;
     }
 
     private _run(parent: State | null): State {
-        let state: State = this.initialState;
+        let state: State = this.firstState;
         if (parent !== null) {
-            state = parent.buildCopy().getNextState();
+            state = parent.buildCopy().incrementMinutes();
         }
 
         if (state.isDone()) {
             return state;
         }
 
-        const cache = StateCache.getInstance();
-        if (cache.isInCache(state)) {
+        if (this.cache.isIn(state)) {
             return state;
         } else {
-            cache.addToCache(state);
+            this.cache.set(state, true);
         }
 
         // * we will explore all the recursive states depending of the robot which have been bought
         const subStates: State[] = [];
         if (!state.isLastMinute()) {
             for (const robotName of this.shop.getRobotNames()) {
-                if (state.canAfford(robotName)) {
-                    /* if (!state.isBeneficialToBuy(robotType)) {
-                            continue;
-                        } */
+                if (state.canAffordRobot(robotName)) {
+                    if (!state.isBeneficialToBuyRobot(robotName)) {
+                        continue;
+                    }
                     const newState = state.buildCopy(parent);
-                    newState.buy(robotName);
-                    newState.collect();
+                    newState.buyRobot(robotName);
+                    newState.collectMinerals();
                     newState.gettingRobot();
                     subStates.push(this._run(newState));
                 }
@@ -68,7 +85,7 @@ export class Runner {
 
         // * we explore the case were no robot is bought
         const defaultState = state.buildCopy(parent);
-        defaultState.collect();
+        defaultState.collectMinerals();
         const ds = this._run(defaultState);
 
         // * return the recursive state that have mine the most geodes
