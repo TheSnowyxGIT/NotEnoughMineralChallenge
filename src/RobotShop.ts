@@ -36,6 +36,11 @@ export class RobotShop {
         return robot.getPrice();
     }
 
+    private getLoot(robotName: string): ItemRegistry<ResourceTypeEnum> {
+        const robot = this.getRobot(robotName);
+        return robot.getLoot();
+    }
+
     canAfford(robotName: string, inventory: ItemRegistry<ResourceTypeEnum>): boolean {
         const price = this.getPrice(robotName);
         for (const resourceType of Object.keys(price)) {
@@ -74,6 +79,28 @@ export class RobotShop {
             }
         }
         return maxPrice;
+    }
+
+    getRobotsThatProducesSpecificResource(resourceType: ResourceTypeEnum): string[] {
+        const robots: string[] = [];
+        for (const robotName of Object.keys(this.robots)) {
+            const loot = this.getLoot(robotName);
+            if (loot.has(resourceType)) {
+                robots.push(robotName);
+            }
+        }
+        return robots;
+    }
+
+    getMaxLootOfSpecificResource(resourceType: ResourceTypeEnum): number {
+        let maxLoot = 0;
+        for (const robotName of Object.keys(this.robots)) {
+            const loot = this.getLoot(robotName);
+            if (loot.getAmount(resourceType) > maxLoot) {
+                maxLoot = loot.getAmount(resourceType);
+            }
+        }
+        return maxLoot;
     }
 
     getStartRobotName(): string {

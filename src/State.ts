@@ -4,9 +4,6 @@ import { ItemRegistry } from './generics/ItemRegistry';
 import { type ResourceTypeEnum } from './types';
 
 export class State implements HashAble {
-    // * static variables
-    public static loggerActivated: boolean = false;
-
     // * instance variables
     private readonly shop: RobotShop;
 
@@ -20,9 +17,16 @@ export class State implements HashAble {
     public robotWaitingToBeBuild: string | null = null;
 
     public logs: string[] = [];
+    public loggerActivated: boolean;
     public parent: State | null = null;
 
-    constructor(robotShop: RobotShop, minutes: number, maxMinute: number, goalMineral: ResourceTypeEnum) {
+    constructor(
+        robotShop: RobotShop,
+        minutes: number,
+        maxMinute: number,
+        goalMineral: ResourceTypeEnum,
+        loggerActivated = false,
+    ) {
         this.shop = robotShop;
 
         this.currentMinute = minutes;
@@ -32,10 +36,18 @@ export class State implements HashAble {
 
         this.robots = new ItemRegistry<string>();
         this.resources = new ItemRegistry<ResourceTypeEnum>();
+
+        this.loggerActivated = loggerActivated;
     }
 
     public buildCopy(parent?: State | null): State {
-        const newState = new State(this.shop, this.currentMinute, this.maxMinute, this.goalMineral);
+        const newState = new State(
+            this.shop,
+            this.currentMinute,
+            this.maxMinute,
+            this.goalMineral,
+            this.loggerActivated,
+        );
         newState.robots = this.robots.deepCopy();
         newState.resources = this.resources.deepCopy();
         newState.parent = parent === undefined ? this : parent;
@@ -61,7 +73,7 @@ export class State implements HashAble {
             const multiplyLoot = ItemRegistry.multiply<ResourceTypeEnum>(loot, numberOfRobots);
             this.resources.addRegistry(multiplyLoot);
 
-            if (State.loggerActivated && numberOfRobots > 0) {
+            if (this.loggerActivated && numberOfRobots > 0) {
                 const lootResourceNames = loot.nonEmptyItemsNames;
                 this.logs.push(
                     `${numberOfRobots} ${robotName} collects ${multiplyLoot.toString()}, you now have ${this.resources.toString(
@@ -76,7 +88,7 @@ export class State implements HashAble {
         if (this.shop.canAfford(robotName, this.resources)) {
             this.robotWaitingToBeBuild = robotName;
             this.shop.deductPrice(this.robotWaitingToBeBuild, this.resources);
-            if (State.loggerActivated) {
+            if (this.loggerActivated) {
                 const priceString = this.shop.priceToString(robotName);
                 this.logs.push(`Spend ${priceString} to start building a ${robotName}.`);
             }
@@ -86,7 +98,7 @@ export class State implements HashAble {
     public gettingRobot(): void {
         if (this.robotWaitingToBeBuild !== null) {
             this.robots.addAmount(this.robotWaitingToBeBuild, 1);
-            if (State.loggerActivated) {
+            if (this.loggerActivated) {
                 this.logs.push(
                     `The new ${this.robotWaitingToBeBuild} is ready; you now have ${this.robots.getAmount(
                         this.robotWaitingToBeBuild,
@@ -115,7 +127,8 @@ export class State implements HashAble {
             `${this.resources.getAmount('ore')}`.padEnd(padSize) +
             `${this.resources.getAmount('clay')}`.padEnd(padSize) +
             `${this.resources.getAmount('obsidian')}`.padEnd(padSize) +
-            `${this.resources.getAmount('geode')}`.padEnd(padSize);
+            `${this.resources.getAmount('geode')}`.padEnd(padSize) +
+            `${this.resources.getAmount('diamond')}`.padEnd(padSize);
         let hashRobots: string = '';
         for (const robotName of this.robots.itemsNames) {
             hashRobots += `${this.robots.getAmount(robotName)}`.padEnd(padSize);
@@ -144,8 +157,28 @@ export class State implements HashAble {
         return false;
     }
 
+    public getEstimatedResourceProduction(resourceType: ResourceTypeEnum): number {
+        const robotsThatProduceSpecificResource = this.shop.getRobotsThatProducesSpecificResource(resourceType);
+        let estimatedProduction = 0;
+        for (const robotName of robotsThatProduceSpecificResource) {
+            const robot = this.shop.getRobot(robotName);
+            const loot = robot.getLoot();
+            const amountOfRobot = this.robots.getAmount(robotName);
+            estimatedProduction += loot.getAmount(resourceType) * amountOfRobot;
+        }
+        return estimatedProduction;
+    }
+
+    /*
+    public doStateHaveHopeToWin(robotName: string): boolean {
+        const minutesLeft = this.maxMinute - this.currentMinute + 1;
+        const currentGoalMineralCount = this.resources.getAmount(this.goalMineral);
+        const currentGoalMineralProduction = this.getEstimatedResourceProduction(this.goalMineral);
+        const maxGoalMinealCollectableByOneRobot = this.shop.getMaxLootOfSpecificResource(this.goalMineral);
+    } */
+
     public showLogs(): void {
-        if (!State.loggerActivated) {
+        if (!this.loggerActivated) {
             console.log(`No logs to show.`);
             return;
         }

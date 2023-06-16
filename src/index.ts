@@ -1,24 +1,17 @@
-import { Runner } from './Runner';
-import { ShopLoader } from './ShopLoader';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NotEnoughMineralController } from './NotEnoughMineralsController';
 
-const shopLoader = new ShopLoader('./v1-blueprints.txt', 1);
-shopLoader.load();
+function v2(): void {
+    const runShops = new NotEnoughMineralController('v1-blueprints-demo.txt', 1);
 
-const shops = shopLoader.getAllShops();
-
-const scores: number[] = [];
-for (const shop of shops) {
-    console.log(`Running ${shop.blueprintId}`);
-
-    const runner = new Runner(shop, 'geode');
-
-    const score = runner.run(24);
-    scores.push(score);
-
-    console.log(`          score: ${score}`);
+    runShops.runAll('geode');
 }
 
-const sum = scores.reduce((a, b) => a + b, 0);
-console.log();
-console.log(`Sum score: ${sum}`);
-console.log(`Average score: ${sum / scores.length}`);
+function v3(): void {
+    const runShops = new NotEnoughMineralController('v1-blueprints-demo.txt', 1);
+
+    runShops.runAll('geode');
+}
+
+const nemc = new NotEnoughMineralController('v1-blueprints-demo.txt', 1);
+nemc.runAll('geode');

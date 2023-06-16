@@ -14,13 +14,16 @@ export class Runner {
 
     private cache: MemoryCache<boolean>;
 
-    constructor(robotShop: RobotShop, goalMineral: ResourceTypeEnum) {
+    private readonly logsActive: boolean;
+
+    constructor(robotShop: RobotShop, goalMineral: ResourceTypeEnum, logsActive = false) {
         this.shop = robotShop;
         this.goalMineral = goalMineral;
+        this.logsActive = logsActive;
     }
 
     public initFirstState(maxMinutes: number): void {
-        this.firstState = new State(this.shop, 1, maxMinutes, this.goalMineral);
+        this.firstState = new State(this.shop, 1, maxMinutes, this.goalMineral, this.logsActive);
 
         for (const robotName of this.shop.getRobotNames()) {
             if (this.shop.getStartRobotName() === robotName) {
@@ -29,6 +32,11 @@ export class Runner {
                 this.firstState.robots.addAmount(robotName, 0);
             }
         }
+    }
+
+    private calculateQualityLevel(state: State): number {
+        const qualityLevel = state.resources.getAmount(this.goalMineral);
+        return qualityLevel * this.shop.blueprintId;
     }
 
     public run(minutes: number): number {
@@ -44,11 +52,6 @@ export class Runner {
         finalState.showLogs();
 
         return this.calculateQualityLevel(finalState);
-    }
-
-    private calculateQualityLevel(state: State): number {
-        const qualityLevel = state.resources.getAmount(this.goalMineral);
-        return qualityLevel * this.shop.blueprintId;
     }
 
     private _run(parent: State | null): State {
@@ -102,7 +105,7 @@ export class Runner {
         this.initFirstState(minutes);
         this.cache = new MemoryCache();
 
-        const lastMinuteStates: State[] = [];
+        let bestFinalState: State | null = null;
 
         const queue = new Queue<State>();
         queue.enqueue(this.firstState);
@@ -135,6 +138,7 @@ export class Runner {
                             continue;
                         }
                         const newState = state.buildCopy(parent);
+
                         newState.buyRobot(robotName);
                         newState.collectMinerals();
                         newState.gettingRobot();
@@ -149,21 +153,19 @@ export class Runner {
             if (!isLastMinute) {
                 queue.enqueue(defaultState);
             } else {
-                lastMinuteStates.push(defaultState);
+                if (bestFinalState === null || defaultState.isBetterThan(bestFinalState)) {
+                    bestFinalState = defaultState;
+                }
             }
         }
 
-        if (lastMinuteStates.length === 0) {
-            throw new Error('No last minute state found');
+        if (bestFinalState === null) {
+            throw new Error('No final state found');
         }
 
-        const finalState = lastMinuteStates.reduce((prev, curr) => {
-            return prev.isBetterThan(curr) ? prev : curr;
-        }, lastMinuteStates[0]);
+        bestFinalState.showLogs();
 
-        finalState.showLogs();
-
-        return this.calculateQualityLevel(finalState);
+        return this.calculateQualityLevel(bestFinalState);
     }
 
     public run_dfs(minutes: number): number {

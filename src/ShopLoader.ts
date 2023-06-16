@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { BlueprintContainer } from './Blueprint/BlueprintContainer';
+import { BlueprintContainer } from './BlueprintContainer';
 import { type RobotShop } from './RobotShop';
 
 export class ShopLoader {

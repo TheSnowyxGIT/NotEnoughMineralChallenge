@@ -1,7 +1,7 @@
-import { Robot, type RobotPrice } from '../Robot';
-import { RobotShop } from '../RobotShop';
-import { ItemRegistry } from '../generics/ItemRegistry';
-import { type ResourceTypeEnum } from '../types';
+import { Robot, type RobotPrice } from './Robot';
+import { RobotShop } from './RobotShop';
+import { ItemRegistry } from './generics/ItemRegistry';
+import { type ResourceTypeEnum } from './types';
 
 interface RobotInfo {
     price: RobotPrice;
