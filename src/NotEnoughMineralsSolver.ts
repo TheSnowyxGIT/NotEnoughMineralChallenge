@@ -3,7 +3,7 @@ import { Runner } from './Runner';
 import { ShopLoader } from './ShopLoader';
 import { type ResourceTypeEnum } from './types';
 
-export class NotEnoughMineralController {
+export class NotEnoughMineralSolver {
     private readonly file: string;
     private readonly shopLoader: ShopLoader;
     private outputFile: string = 'analysis.txt';
@@ -17,7 +17,7 @@ export class NotEnoughMineralController {
         this.outputFile = outputFile;
     }
 
-    public runAll(goalMineral: ResourceTypeEnum, persistResist: boolean = true): void {
+    public runAll(goalMineral: ResourceTypeEnum, minutes: number, persistResist: boolean = true): void {
         this.shopLoader.load();
 
         const shops = this.shopLoader.getAllShops();
@@ -25,7 +25,7 @@ export class NotEnoughMineralController {
         const scores: number[] = [];
         for (const shop of shops) {
             const runner = new Runner(shop, goalMineral);
-            const score = runner.run_dfs(24);
+            const score = runner.run_dfs(minutes);
             scores.push(score);
         }
 
@@ -35,12 +35,14 @@ export class NotEnoughMineralController {
         }
     }
 
-    run(blueprintIndex: number, goalMineral: ResourceTypeEnum, activeLogs = false): void {
+    run(blueprintIndex: number, goalMineral: ResourceTypeEnum, minutes: number, activeLogs = false): void {
         this.shopLoader.load();
 
         const shop = this.shopLoader.getShop(blueprintIndex);
+
         const runner = new Runner(shop, goalMineral, activeLogs);
-        const score = runner.run_dfs(24);
+        const score = runner.run_dfs(minutes);
+
         console.log(`Score: ${score}`);
     }
 

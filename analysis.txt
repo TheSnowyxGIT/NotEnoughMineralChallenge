@@ -1,4 +1,0 @@
-Blueprint 1: 9
-Blueprint 2: 18
-
-Best blueprint is the blueprint 1
